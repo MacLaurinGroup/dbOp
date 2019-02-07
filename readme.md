@@ -128,7 +128,7 @@ This method returns the last SQL result from an INSERT/UPDATE
 
 This way works in the same way, using the database metadata contained within 'desc table' to drive a lot of the logic and query building.
 
-The format is { "<table>.<alias>.<column>" : "<table>.<alias>.<column>" } for defining the tables and the way they are joined.  If it is a single table then pass in a string: "<table>.<alias>"
+The format is ```{ "<table>.<alias>.<column>" : "<table>.<alias>.<column>" }``` for defining the tables and the way they are joined.  If it is a single table then pass in a string: ```"<table>.<alias>"```
 
 ```
 const dbOpMySql = require("dbOpMySql");
