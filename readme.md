@@ -29,7 +29,7 @@ First example, pulls back a single row from the given table, with the given prim
 It returns null if no rows were found.
 
 ```
-const dbOpMySql = require("dbOpMySql");
+const dbOpMySql = require("mg-dbop");
 
 const dbConn = //get a connection to MySQL database
 const customId = "xxx";
@@ -48,7 +48,7 @@ const row = await dbOpMySql.selectOne(
 Second example, without any columns specified, will return everything.
 
 ```
-const dbOpMySql = require("dbOpMySql");
+const dbOpMySql = require("mg-dbop");
 
 const dbConn = //get a connection to MySQL database
 const customId = "xxx";
@@ -68,7 +68,7 @@ This will automatically look for the primary key values and construct the insert
 fields are passed in.
 
 ```
-const dbOpMySql = require("dbOpMySql");
+const dbOpMySql = require("mg-dbop");
 
 const dbConn = //get a connection to MySQL database
 
@@ -92,7 +92,7 @@ This will automatically look for the primary key values and construct the update
 fields are passed in.
 
 ```
-const dbOpMySql = require("dbOpMySql");
+const dbOpMySql = require("mg-dbop");
 
 const dbConn = //get a connection to MySQL database
 
@@ -131,7 +131,7 @@ This way works in the same way, using the database metadata contained within 'de
 The format is ```{ "<table>.<alias>.<column>" : "<table>.<alias>.<column>" }``` for defining the tables and the way they are joined.  If it is a single table then pass in a string: ```"<table>.<alias>"```
 
 ```
-const dbOpMySql = require("dbOpMySql");
+const dbOpMySql = require("mg-dbop");
 
 const dbConn = //get a connection to MySQL database
 
