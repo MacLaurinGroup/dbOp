@@ -1,16 +1,26 @@
 {
-  "name": "@mg/dbOpMySql",
+  "name": "mg-dbop",
   "private" : true,
-  "version": "0.0.40",
-  "description": "dbOpMySql",
+  "version": "0.0.1",
+  "homepage": "https://github.com/MacLaurinGroup/dbOp",
+  "description": "Query builder, and validator, for MySQL and node that utilizes the underlying table to provide a level of checking",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com//MacLaurinGroup/dbOp"
+  },
+  "keywords": [
+    "mysql",
+    "node"
+  ],
   "author": "MacLaurin Group",
-  "license": "ISC",
   "dependencies": {
     "promise-mysql" : "^3.3.1",
     "underscore": "^1.9.1"
-  }
+  },
+  "url" : "https://maclaurin.group/",
+  "license": "Apache-2.0"
 }

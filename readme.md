@@ -1,4 +1,4 @@
-## dbOpMySql
+## dbOp
 
 A utility function to help with query writing for dealing with MySQL compatible databases.
 
@@ -14,6 +14,11 @@ The library can be used in two different modes:
 
 Any errors result in exceptions being thrown.
 
+## Installation
+
+```
+npm install mg-dbop
+```
 
 ### Single use statements
 
@@ -193,4 +198,9 @@ const result = {
 * .dataTableFilter(req)  // for dataTable support
 * async .run()
 * async .runFirstRow()
-* async .count() 
+* async .count()
+
+
+## Updates
+
+* 2019-02-07 Initial Release
