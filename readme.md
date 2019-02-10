@@ -196,6 +196,7 @@ const result = {
 * .limitReset()   // clears out the limit
 * .getSql()       // gets the final SQL statement as a string
 * .dataTableFilter(req)  // for dataTable support
+* .dataTableExecute()   // executes the query, creating a struct that DataTable wants
 * async .run()
 * async .runFirstRow()
 * async .count()
