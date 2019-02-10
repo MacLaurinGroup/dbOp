@@ -204,4 +204,5 @@ const result = {
 
 ## Updates
 
+* 2019-02-11 Updated added .dataTableExecute()
 * 2019-02-07 Initial Release
