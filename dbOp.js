@@ -231,6 +231,15 @@ class dbOp {
     return this;
   }
 
+  async dataTableExecute(){
+    const result = {
+      data : await this.run(),
+      recordsTotal : await this.count()
+    };
+    result.recordsFiltered = result.recordsTotal;
+    return result;
+  }
+  
   transformColumn(colName) {
     let s = colName.indexOf("_");
     if (s >= 0) {
