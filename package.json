@@ -1,7 +1,7 @@
 {
   "name": "mg-dbop",
   "private" : true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/MacLaurinGroup/dbOp",
   "description": "Query builder, and validator, for MySQL and node that utilizes the underlying table to provide a level of checking",
   "main": "index.js",
