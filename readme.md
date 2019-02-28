@@ -210,7 +210,9 @@ You can also specify some additional query params:
 ## Updates
 
 * 2019-02-28
-** Updated .dataTableExecute() to cope with "." aliases
-** Updated .dataTableExecute() to look for hard columns to filter on
+* Removed the auto munging of columns from "." to "_"
+* Updated .dataTableExecute() to cope with "." aliases
+* Updated .dataTableExecute() to look for hard columns to filter on
+
 * 2019-02-11 Updated added .dataTableExecute()
 * 2019-02-07 Initial Release
