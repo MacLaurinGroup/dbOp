@@ -183,6 +183,11 @@ const result = {
 }
 ```
 
+You can also specify some additional query params:
+
+* columnName=value :: this will create a hard WHERE comparison and remove it from the dataTable search
+* selectcolumns=col1,col2  :: returns back only the columns named
+
 #### Method list
 
 * .selectAll()    // select all the columns
@@ -204,5 +209,8 @@ const result = {
 
 ## Updates
 
+* 2019-02-28
+** Updated .dataTableExecute() to cope with "." aliases
+** Updated .dataTableExecute() to look for hard columns to filter on
 * 2019-02-11 Updated added .dataTableExecute()
 * 2019-02-07 Initial Release

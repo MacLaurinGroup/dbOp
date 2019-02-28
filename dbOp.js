@@ -87,7 +87,7 @@ class dbOp {
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
-        this.selectSql += table.alias + ".`" + column + "` as `" + table.alias + "_" + column + "`,";
+        this.selectSql += table.alias + ".`" + column + "`,";
       }
     }
 
@@ -166,7 +166,7 @@ class dbOp {
       console.log(sql);
     }
 
-    return await this.dbConn.query(sql, this.values);
+    return await this.dbConn.query({sql:sql,nestTables:"."}, this.values);
   }
 
   async runFirstRow() {
@@ -189,15 +189,33 @@ class dbOp {
   }
 
   dataTableFilter(req) {
+
+    // AutoFilter; for fields that are part of the string
+    const filteredColumns = {};
+    for (let tableName in this.tables) {
+      const table = this.tables[tableName];
+      for (let column in table.desc.columns) {
+        if ( _.has(req.query, table.alias + "." + column ) || _.has(req.query, column ) ){
+          this.where( table.alias + ".`" + column + "` = ?", req.query[table.alias + "." + column]);
+          filteredColumns[table.alias + "." + column] = true;
+        }
+      }
+    }
+
     // Add in the search
     if (req.query.search) {
+
+      // Support the shorten version
+      if ( req.query.c )
+        req.query.columns = req.query.c;
+
       const searchVal = req.query.search.value;
       if (searchVal.length > 2) {
         let where = " (";
         const whereVals = [];
 
         for (let col of req.query.columns) {
-          if (col.searchable == "true") {
+          if (col.searchable == "true" && !_.has(filteredColumns, col.data)) {
             where += this.transformColumn(col.data);
             where += " LIKE ? OR ";
             whereVals.push("%" + searchVal + "%");
@@ -219,7 +237,7 @@ class dbOp {
     // Add in the order
     if (req.query.order && req.query.columns) {
       const colOrderIndex = req.query.order[0].column * 1;
-      const colOrderName = req.query.columns[colOrderIndex].data;
+      const colOrderName = this.transformColumn( req.query.columns[colOrderIndex].data );
       this.orderbySql = " ORDER BY " + colOrderName + " " + ((req.query.order[0].dir == "asc") ? "asc" : "desc");
     }
 
@@ -239,14 +257,19 @@ class dbOp {
     result.recordsFiltered = result.recordsTotal;
     return result;
   }
-  
+
   transformColumn(colName) {
-    let s = colName.indexOf("_");
+    let s = colName.indexOf("\\");
+    if (s >= 0) {
+      colName = colName.substring(0, s) + colName.substring(s + 1);
+    }
+
+    s = colName.indexOf("_");
     if (s >= 0) {
       return colName.substring(0, s) + "." + colName.substring(s + 1);
-    } else {
-      return colName;
     }
+
+    return colName;
   }
 }
 
