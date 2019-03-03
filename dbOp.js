@@ -289,7 +289,7 @@ class dbOp {
         }
       }
     }
-    
+
     // Add in the search
     if (req.query.search) {
 
@@ -320,6 +320,8 @@ class dbOp {
     // columns
     if (req.query.selectcolumns) {
       this.selectSql = req.query.selectcolumns;
+    } else if (req.query.fields) {
+      this.selectSql = req.query.fields;
     }
 
     // Add in the order
