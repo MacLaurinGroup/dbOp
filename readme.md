@@ -86,6 +86,10 @@ It will return the ```lastInsertId``` of the last insert.   Alternatively you ca
 
 For fields that are designated datetime & date you can pass in the values now()/NOW() for the database to use the current time.
 
+A 4th optional field, ignore, will add in the IGNORE flag to the INSERT statement.
+
+You can also psuedo name space the body, by passing in "alias.table" as the table defintion.  At this point, the fields will expect to see "alias.column1".
+
 #### UPDATE
 
 This will automatically look for the primary key values and construct the update accordingly, making sure all required
@@ -108,16 +112,20 @@ await dbOpMySql.update(dbConn, "table", data);
 
 This will return the number of rows that were up changed in this update.
 
+You can also psuedo name space the body, by passing in "alias.table" as the table defintion.  At this point, the fields will expect to see "alias.column1".
+
 #### Helper Methods
 
 There are a number of helper methods that are available to make data clean up simpler.
 
 These methods are using the builder pattern:
 
+* .setControlFields([])   // sets all the columns you wish to ignore in any UPDATE/INSERT statements
 * .clearCache()    // clears out the desc cache
 * .sanitizeFieldsAZaz09(data,fieldArray)   // for the array of field names, clean up the data
 * .checkForEmptyFields(data,fieldArray)   // throw an error if any of the fields are empty or null (after trimming whitespace)
 * .checkForMissingFields(data,fieldArray)   // throw an error if any of the fields are missing
+* .checkForMissingEmptyFields(data,fieldArray)   // throw an error if any of the fields are missing or empty
 
 This method returns the last SQL result from an INSERT/UPDATE
 
@@ -167,9 +175,13 @@ Datatables have a rich array of options associated with it.  dbOpMySql makes it 
 
 ```
 const sql = await dbOpMySql.sqlBuilder(dbConn, {
-  "table1.t1.tableId": "table2.t2.tableId"
+  "table1.t1.tableId": "table2.t2.tableId", {
+    "table1.t1.rStatus" : "rStatus.rs.id",
+    "table1.t1.rType" : {
+      "join" : "rStatus.rs.id",
+      "columns" : "rs.label"              // optional
+  }
 });
-
 
 // passing in the object where all the query params exist
 sql.dataTableFilter( req );
@@ -188,18 +200,40 @@ You can also specify some additional query params:
 * columnName=value :: this will create a hard WHERE comparison and remove it from the dataTable search
 * selectcolumns=col1,col2  :: returns back only the columns named
 
+##### LEFT JOIN
+
+The 3rd param makes it easier to create LEFT JOIN statements to join tables that may have null rows associated with them.  The syntax is an object with:
+
+```
+{
+  "primaryTable.t1.tableId" : "joinedTable1.jt1.tableId"
+}
+```
+
+The table you are joining to must be on the right hand side.  This will automatically select all the fields on the joinedTable and put them in the SELECT.  Alternatively you can specify which columns from the joinedTable you want:
+
+```
+{
+  "primaryTable.t1.tableId" : {
+    "join" : "joinedTable1.jt1.tableId",
+    "columns" : "jt1.label"
+}
+```
+
+
 #### Method list
 
 * .selectAll()    // select all the columns
 * .select( str )  // SELECT 'str' FROM
 * .where( str[, val])  // adds a where statement with optional prepared value
+* .whereOR( str[, val])  // adds a where statement with optional prepared value, appending as an OR
 * .orderby( str )
 * .limit( page, pageSize )  // page No and pageSize
 * .setConsole( true|false )  // outputs the final SQL to console.log()
 * .whereReset()   // clears out the where
 * .orderbyReset()  // clears out the orderby
 * .limitReset()   // clears out the limit
-* .getSql()       // gets the final SQL statement as a string
+* .toString()     // gets the final SQL statement as a string
 * .dataTableFilter(req)  // for dataTable support
 * .dataTableExecute()   // executes the query, creating a struct that DataTable wants
 * async .run()
@@ -209,10 +243,15 @@ You can also specify some additional query params:
 
 ## Updates
 
+* 2019-03-02
+  * Added LEFT JOIN to the sqlBuilder
+  * Added checkForMissingEmptyFields() method to check for both
+  * Added .whereOR()
+  * Psuedo namespace on INSERT/UPDATE methods
+  * Fixed sanitizeFieldsAZaz09() to allow space
 * 2019-02-28
-* Removed the auto munging of columns from "." to "_"
-* Updated .dataTableExecute() to cope with "." aliases
-* Updated .dataTableExecute() to look for hard columns to filter on
-
+  * Removed the auto munging of columns from "." to "_"
+  * Updated .dataTableExecute() to cope with "." aliases
+  * Updated .dataTableExecute() to look for hard columns to filter on
 * 2019-02-11 Updated added .dataTableExecute()
 * 2019-02-07 Initial Release

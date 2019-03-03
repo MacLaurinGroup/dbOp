@@ -1,7 +1,7 @@
 /**
  * Helper class that creates and validates database operations
  * https://github.com//MacLaurinGroup/dbOp
- * (c) MacLaurin Group LLC 2018
+ * (c) MacLaurin Group LLC 2018, 2019
  */
 "use strict";
 
@@ -24,28 +24,47 @@ class dbOpMysql {
     this.lastResult = null;
   }
 
-
-  clearCache(){
+  clearCache() {
     this.tableDescCache = {};
     return this;
   }
 
+  setControlFields(cF){
+    this.controlFields = cF;
+  }
 
-  /**
+
+  /**  ------------------------------------------------------------------------------------------
    * Sanitize strings so they are clean
    */
   sanitizeFieldsAZaz09(data, fields) {
     for (let field of fields) {
       if (_.has(data, field)) {
         data[field] = data[field].trim();
-        data[field] = data[field].replace(/[^a-zA-Z0-9]/g, '-');
+        data[field] = data[field].replace(/[^a-zA-Z0-9 ]/g, '-');
       }
     }
     return this;
   }
 
 
-  /**
+  /**  ------------------------------------------------------------------------------------------
+   * Check for fields that missing and empty
+   */
+  checkForMissingEmptyFields(data, fields) {
+    for (let field of fields) {
+      if (!_.has(data, field)) {
+        throw new Error(field + " was missing");
+      } else if (_data[field] == null || data[field].trim() == "") {
+        throw new Error(field + " was empty");
+      }
+    }
+    return this;
+  }
+
+
+
+  /**  ------------------------------------------------------------------------------------------
    * Check for fields that present, but empty; Builder pattern
    */
   checkForEmptyFields(data, fields) {
@@ -58,7 +77,8 @@ class dbOpMysql {
   }
 
 
-  /**
+
+  /** ------------------------------------------------------------------------------------------
    * Check for fields that missing
    */
   checkForMissingFields(data, fields) {
@@ -71,16 +91,18 @@ class dbOpMysql {
   }
 
 
-  /**
+
+  /** ------------------------------------------------------------------------------------------
    * Return back a builder object
    */
-  async sqlBuilder(dbConn, tables) {
+  async sqlBuilder(dbConn, tables, leftJoinStruct) {
     const dop = new dbOp(this);
-    return await dop.init(dbConn, tables);
+    return await dop.init(dbConn, tables, leftJoinStruct);
   }
 
 
-  /**
+
+  /** ------------------------------------------------------------------------------------------
    * Performs a single select on a table; optional columnArray is the only columns you want back
    */
   async singleSelect(dbConn, table, data, columnArray) {
@@ -116,9 +138,23 @@ class dbOpMysql {
     return (rows.length == 1) ? rows[0] : null;
   }
 
+
+
+  /** ------------------------------------------------------------------------------------------
+   Performs an UPDATE statement on the 'table' with the given 'data' body.
+
+   'table' can be a format of 'alias'.'table' and the alias is scoped inside of body.
+
+   for example  "ac.table" ... would expect columns for table to be named "ac.column1" etc
+   */
+
   async insert(dbConn, table, data, ignoreFlag) {
+    // Pull out the table definitions
+    const tableDef = table.split(".");
+    const alias = (tableDef.length == 2) ? (tableDef[0]+".") : "";
+    table = (tableDef.length == 1) ? tableDef[0] : tableDef[1];
     const tableDesc = await this._getTableDesc(dbConn, table);
-    this.validateData(tableDesc, data);
+    this.validateData(tableDesc, alias, data);
 
     ignoreFlag = (ignoreFlag) ? ignoreFlag : false;
 
@@ -130,8 +166,10 @@ class dbOpMysql {
 
     // Put the names
     for (let key in data) {
-      if (_.has(tableDesc.columns, key) && !tableDesc.columns[key].autoKeyGen && !_.has(this.controlFields, key)) {
-        sql += "`" + key + "`,";
+      let tableKey = key.substring( alias.length );
+
+      if (_.has(tableDesc.columns, tableKey) && !tableDesc.columns[tableKey].autoKeyGen && !_.has(this.controlFields, tableKey)) {
+        sql += "`" + tableKey + "`,";
         sqlVals += "?,";
         vals.push(data[key]);
       }
@@ -146,12 +184,21 @@ class dbOpMysql {
   }
 
 
-  /**
-   * Returns the number of rows updated
+  /** ------------------------------------------------------------------------------------------
+   Performs an UPDATE statement on the 'table' with the given 'data' body.
+
+   'table' can be a format of 'alias'.'table' and the alias is scoped inside of body.
+
+   for example  "ac.table" ... would expect columns for table to be named "ac.column1" etc
    */
   async update(dbConn, table, data) {
+
+    // Pull out the table definitions
+    const tableDef = table.split(".");
+    const alias = (tableDef.length == 2) ? (tableDef[0]+".") : "";
+    table = (tableDef.length == 1) ? tableDef[0] : tableDef[1];
     const tableDesc = await this._getTableDesc(dbConn, table);
-    this.validateData(tableDesc, data);
+    this.validateData(tableDesc, alias, data);
 
     // Create the SQL statement
     let sql = "UPDATE `" + table + "` SET ";
@@ -159,11 +206,13 @@ class dbOpMysql {
 
     // Put the names
     for (let key in data) {
-      if (_.has(tableDesc.columns, key) && !tableDesc.columns[key].autoKeyGen && !_.has(this.controlFields, key)) {
-        if (tableDesc.columns[key].type.startsWith("date") && (data[key] == "now()" || data[key] == "NOW()")) {
-          sql += "`" + key + "`=now(),";
+      let tableKey = key.substring( alias.length );
+
+      if (_.has(tableDesc.columns, tableKey) && !tableDesc.columns[tableKey].autoKeyGen && !_.has(this.controlFields, tableKey)) {
+        if (tableDesc.columns[tableKey].type.startsWith("date") && (data[key] == "now()" || data[key] == "NOW()")) {
+          sql += "`" + tableKey + "`=now(),";
         } else {
-          sql += "`" + key + "`=?,";
+          sql += "`" + tableKey + "`=?,";
           vals.push(data[key]);
         }
       }
@@ -174,11 +223,11 @@ class dbOpMysql {
     sql += " WHERE ";
     for (let pk of tableDesc.keys) {
       if (tableDesc.columns[pk].keyType && tableDesc.columns[pk].keyType == "PRI") {
-        if (_.has(data, pk)) {
+        if (_.has(data, alias + pk)) {
           sql += "`" + pk + "`=? AND ";
-          vals.push(data[pk]);
+          vals.push(data[alias + pk]);
         } else {
-          throw new Error("[-] Missing primary key=" + pk);
+          throw new Error("[-] Missing primary key=" + alias + pk);
         }
       }
     }
@@ -190,20 +239,20 @@ class dbOpMysql {
     return _.has(this.lastResult, "changedRows") ? this.lastResult.changedRows : 0;
   }
 
-
   getLastResult() {
     return this.lastResult;
   }
 
-
   //---[ Psuedo Private Methods ]-------------------------------------
 
-  validateData(tableDesc, data) {
+  validateData(tableDesc, alias, data) {
     let columnCount = 0;
 
     for (let fieldData in data) {
-      if (_.has(tableDesc.columns, fieldData)) {
-        const fieldDef = tableDesc.columns[fieldData];
+      let tableKey = fieldData.substring( alias.length );
+
+      if (_.has(tableDesc.columns, tableKey)) {
+        const fieldDef = tableDesc.columns[tableKey];
         columnCount++;
 
         if (fieldDef.type == "text") {
@@ -274,6 +323,7 @@ class dbOpMysql {
   }
 
 
+
   /**
    * Parses the HH:MM:SS and validates
    */
@@ -298,6 +348,7 @@ class dbOpMysql {
     thisDate.setSeconds(v);
     return thisDate;
   }
+
 
 
   /**

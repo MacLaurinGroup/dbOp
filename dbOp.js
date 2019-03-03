@@ -12,6 +12,7 @@ class dbOp {
   constructor(_dbOpMysql) {
     this.dbOpMysql = _dbOpMysql;
     this.tables = {};
+    this.joinTables = [];
     this.selectSql = "";
     this.whereSql = "";
     this.fromSql = "FROM ";
@@ -26,7 +27,7 @@ class dbOp {
    * joinStruct is the { "<table>.<alias>.<column>" : "<table>.<alias>.<column>" } for defining the tables
    * and the way they are joined.  If it is a single table then pass in a string: "<table>.<alias>"
    */
-  async init(dbConn, joinStruct) {
+  async init(dbConn, joinStruct, leftJoinStruct) {
     this.dbConn = dbConn;
 
     if (typeof joinStruct == "string") {
@@ -51,7 +52,6 @@ class dbOp {
       if (!_.has(this.tables, leftTable.name)) {
         this.tables[leftTable.name] = leftTable;
         this.fromSql += "`" + leftTable.name + "` " + leftTable.alias + ",";
-
       }
 
       if (right != null) {
@@ -69,8 +69,56 @@ class dbOp {
           this.whereSql = " WHERE ";
         }
 
-        this.whereSql += leftTable.alias + "." + left[2];
-        this.whereSql += "=" + rightTable.alias + "." + right[2] + " AND ";
+        this.whereSql += leftTable.alias + ".`" + left[2] + "`";
+        this.whereSql += "=" + rightTable.alias + ".`" + right[2] + "` AND ";
+      }
+    }
+
+    // Handle the left join
+    if (typeof leftJoinStruct != "undefined") {
+      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
+
+      for (let t in leftJoinStruct) {
+        const left = t.split(".");
+
+        const leftTable = {
+          alias: left[1],
+          name: left[0],
+          desc: await this.dbOpMysql._getTableDesc(dbConn, left[0])
+        };
+
+        if (!_.has(this.tables, leftTable.name)) {
+          this.tables[leftTable.name] = leftTable;
+        }
+
+        let right = null;
+        let columns = null;
+        if (leftJoinStruct[t] != null) {
+
+          if (typeof leftJoinStruct[t] == "object") {
+            right = leftJoinStruct[t]["join"].split(".");
+            columns = leftJoinStruct[t]["columns"];
+          } else {
+            right = leftJoinStruct[t].split(".");
+          }
+
+          const rightTable = {
+            alias: right[1],
+            name: right[0],
+            desc: await this.dbOpMysql._getTableDesc(dbConn, right[0])
+          };
+
+          // Has the specific columns been specified
+          if (columns != null) {
+            rightTable.columns = columns;
+          }
+
+          // Add this to our joined table list
+          this.joinTables.push(rightTable);
+
+          // Create the LEFT JOIN
+          this.fromSql += " LEFT JOIN " + rightTable.name + " " + rightTable.alias + " ON " + leftTable.alias + ".`" + left[2] + "` = " + rightTable.alias + ".`" + right[2] + "`";
+        }
       }
     }
 
@@ -78,12 +126,15 @@ class dbOp {
       this.whereSql = this.whereSql.substring(0, this.whereSql.lastIndexOf(" AND"));
     }
 
-    this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
+    if (this.fromSql.endsWith(",")) {
+      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
+    }
     return this;
   }
 
 
   selectAll() {
+    // Go through the core tables
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
@@ -91,6 +142,18 @@ class dbOp {
       }
     }
 
+    // Go through the joined tables
+    for (let table of this.joinTables) {
+      if (table.columns) {
+        this.selectSql += table.columns + ",";
+        continue;
+      }
+      for (let column in table.desc.columns) {
+        this.selectSql += table.alias + ".`" + column + "`,";
+      }
+    }
+
+    // Finally cleanup
     this.selectSql = this.selectSql.substring(0, this.selectSql.length - 1);
     return this;
   }
@@ -100,6 +163,7 @@ class dbOp {
     this.selectSql = statement;
     return this;
   }
+
 
   /**
    * statement should be a legal SQL statement, with the alias and ? for the prepared statement;
@@ -118,6 +182,22 @@ class dbOp {
 
     return this;
   }
+
+
+  whereOR(statement, values) {
+    if (this.whereSql.length == 0) {
+      this.whereSql += "WHERE " + statement;
+    } else {
+      this.whereSql += " OR " + statement;
+    }
+
+    if (typeof values != "undefined") {
+      this.values = this.values.concat(values);
+    }
+
+    return this;
+  }
+
 
   orderby(statement) {
     this.orderbySql = " ORDER BY " + statement;
@@ -147,6 +227,10 @@ class dbOp {
     this.limitSql = "";
   }
 
+  toString() {
+    return this.getSql();
+  }
+
   getSql() {
     if (this.selectSql == "") {
       this.selectAll();
@@ -166,7 +250,7 @@ class dbOp {
       console.log(sql);
     }
 
-    return await this.dbConn.query({sql:sql,nestTables:"."}, this.values);
+    return await this.dbConn.query({ sql: sql, nestTables: "." }, this.values);
   }
 
   async runFirstRow() {
@@ -195,8 +279,8 @@ class dbOp {
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
-        if ( _.has(req.query, table.alias + "." + column ) || _.has(req.query, column ) ){
-          this.where( table.alias + ".`" + column + "` = ?", req.query[table.alias + "." + column]);
+        if (_.has(req.query, table.alias + "." + column) || _.has(req.query, column)) {
+          this.where(table.alias + ".`" + column + "` = ?", req.query[table.alias + "." + column]);
           filteredColumns[table.alias + "." + column] = true;
         }
       }
@@ -206,7 +290,7 @@ class dbOp {
     if (req.query.search) {
 
       // Support the shorten version
-      if ( req.query.c )
+      if (req.query.c)
         req.query.columns = req.query.c;
 
       const searchVal = req.query.search.value;
@@ -237,7 +321,7 @@ class dbOp {
     // Add in the order
     if (req.query.order && req.query.columns) {
       const colOrderIndex = req.query.order[0].column * 1;
-      const colOrderName = this.transformColumn( req.query.columns[colOrderIndex].data );
+      const colOrderName = this.transformColumn(req.query.columns[colOrderIndex].data);
       this.orderbySql = " ORDER BY " + colOrderName + " " + ((req.query.order[0].dir == "asc") ? "asc" : "desc");
     }
 
@@ -249,10 +333,10 @@ class dbOp {
     return this;
   }
 
-  async dataTableExecute(){
+  async dataTableExecute() {
     const result = {
-      data : await this.run(),
-      recordsTotal : await this.count()
+      data: await this.run(),
+      recordsTotal: await this.count()
     };
     result.recordsFiltered = result.recordsTotal;
     return result;
