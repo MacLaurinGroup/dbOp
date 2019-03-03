@@ -275,17 +275,21 @@ class dbOp {
   dataTableFilter(req) {
 
     // AutoFilter; for fields that are part of the string
+    // AutoFilter; for fields that are part of the string
     const filteredColumns = {};
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
-        if (_.has(req.query, table.alias + "." + column) || _.has(req.query, column)) {
+        if (_.has(req.query, table.alias + "." + column) ) {
           this.where(table.alias + ".`" + column + "` = ?", req.query[table.alias + "." + column]);
+          filteredColumns[table.alias + "." + column] = true;
+        } else if ( _.has(req.query, column)) {
+          this.where(table.alias + ".`" + column + "` = ?", req.query[column]);
           filteredColumns[table.alias + "." + column] = true;
         }
       }
     }
-
+    
     // Add in the search
     if (req.query.search) {
 
