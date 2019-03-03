@@ -31,6 +31,7 @@ class dbOpMysql {
 
   setControlFields(cF){
     this.controlFields = cF;
+    return this;
   }
 
 
@@ -55,7 +56,7 @@ class dbOpMysql {
     for (let field of fields) {
       if (!_.has(data, field)) {
         throw new Error(field + " was missing");
-      } else if (_data[field] == null || data[field].trim() == "") {
+      } else if (data[field] == null || data[field].trim() == "") {
         throw new Error(field + " was empty");
       }
     }
