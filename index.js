@@ -40,12 +40,12 @@ class dbOpMysql {
   convertBlankToNull: function( data, fieldArr ){
     for ( let field of fieldArr ){
       field = field.trim();
-      if ( _.has(data, field) && data[field] == "" ){
+      if ( _.has(data, field) && data[field] != null && data[field].trim() == "" ){
         data[field] = null;
       }
     }
     return this;
-  },
+  }
 
 
   /**  ------------------------------------------------------------------------------------------
