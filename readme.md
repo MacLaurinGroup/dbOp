@@ -126,6 +126,7 @@ These methods are using the builder pattern:
 * .checkForEmptyFields(data,fieldArray)   // throw an error if any of the fields are empty or null (after trimming whitespace)
 * .checkForMissingFields(data,fieldArray)   // throw an error if any of the fields are missing
 * .checkForMissingEmptyFields(data,fieldArray)   // throw an error if any of the fields are missing or empty
+* .convertBlankToNull(data,fieldArray)  // converts any blank fields to pure null
 
 This method returns the last SQL result from an INSERT/UPDATE
 
@@ -243,6 +244,9 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-03-10
+  * Allow null to be set for varchar/text fields
+  * convertBlankToNull() helper method added
 * 2019-03-02
   * Added LEFT JOIN to the sqlBuilder
   * Added checkForMissingEmptyFields() method to check for both

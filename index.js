@@ -34,6 +34,19 @@ class dbOpMysql {
     return this;
   }
 
+  /**
+   * For fields that need a null instead of "" are converted here; usually for the references
+   */
+  convertBlankToNull: function( data, fieldArr ){
+    for ( let field of fieldArr ){
+      field = field.trim();
+      if ( _.has(data, field) && data[field] == "" ){
+        data[field] = null;
+      }
+    }
+    return this;
+  },
+
 
   /**  ------------------------------------------------------------------------------------------
    * Sanitize strings so they are clean
@@ -235,6 +248,9 @@ class dbOpMysql {
 
     sql = sql.substring(0, sql.lastIndexOf("AND"));
 
+    console.log( sql );
+    console.log( vals );
+
     // Execute the function
     this.lastResult = await dbConn.query(sql, vals);
     return _.has(this.lastResult, "changedRows") ? this.lastResult.changedRows : 0;
@@ -257,15 +273,27 @@ class dbOpMysql {
         columnCount++;
 
         if (fieldDef.type == "text") {
-          data[fieldData] = data[fieldData].trim();
+
+          if ( !fieldDef.allowNull && data[fieldData] == null )
+            throw new Error("[-] Field=" + fieldData + "; value was null; not permitted" );
+
+          data[fieldData] = ( data[fieldData] == null ) ?  null : data[fieldData].trim();
+
         } else if (fieldDef.type == "varchar") {
-          if (!_.isString(data[fieldData])) {
+
+          if ( !fieldDef.allowNull && data[fieldData] == null )
+            throw new Error("[-] Field=" + fieldData + "; value was null; not permitted" );
+
+          if (data[fieldData] != null && !_.isString(data[fieldData])) {
             data[fieldData] = data[fieldData] + "";
           }
-          data[fieldData] = data[fieldData].trim();
-          if (data[fieldData].length > fieldDef.len) {
+
+          data[fieldData] = ( data[fieldData] == null ) ?  null : data[fieldData].trim();
+
+          if ( data[fieldData] != null && data[fieldData].length > fieldDef.len) {
             throw new Error("[-] Field=" + fieldData + "; longer than " + fieldDef.len);
           }
+
         } else if (fieldDef.type == "enum") {
           if (_.indexOf(fieldDef.values, data[fieldData]) == -1) {
             throw new Error("[-] Field=" + fieldData + "; invalid value=" + data[fieldData]);
@@ -412,6 +440,8 @@ class dbOpMysql {
             }
           }
         }
+
+        field.allowNull = ( row["Null"] == "YES" );
 
         if (field.type.indexOf("(") > 0) {
           field.type = field.type.substring(0, field.type.indexOf("("));
