@@ -37,7 +37,7 @@ class dbOpMysql {
   /**
    * For fields that need a null instead of "" are converted here; usually for the references
    */
-  convertBlankToNull: function( data, fieldArr ){
+  convertBlankToNull( data, fieldArr ){
     for ( let field of fieldArr ){
       field = field.trim();
       if ( _.has(data, field) && data[field] != null && data[field].trim() == "" ){
