@@ -36,6 +36,8 @@ class dbOp {
       joinStruct = j;
     }
 
+    const tableFromSql = [];
+
     for (let t in joinStruct) {
       const left = t.split(".");
       let right = null;
@@ -51,7 +53,13 @@ class dbOp {
 
       if (!_.has(this.tables, leftTable.name)) {
         this.tables[leftTable.name] = leftTable;
-        this.fromSql += "`" + leftTable.name + "` " + leftTable.alias + ",";
+
+        tableFromSql.push({
+          alias: leftTable.alias,
+          from: "`" + leftTable.name + "` " + leftTable.alias,
+          joins: []
+        });
+
       }
 
       if (right != null) {
@@ -62,7 +70,13 @@ class dbOp {
         };
         if (!_.has(this.tables, rightTable.name)) {
           this.tables[rightTable.name] = rightTable;
-          this.fromSql += "`" + rightTable.name + "` " + rightTable.alias + ",";
+
+          tableFromSql.push({
+            alias: rightTable.alias,
+            from: "`" + rightTable.name + "` " + rightTable.alias,
+            joins: []
+          });
+
         }
 
         if (this.whereSql == "") {
@@ -76,7 +90,6 @@ class dbOp {
 
     // Handle the left join
     if (typeof leftJoinStruct != "undefined") {
-      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
 
       for (let t in leftJoinStruct) {
         const left = t.split(".");
@@ -117,21 +130,35 @@ class dbOp {
           this.joinTables.push(rightTable);
 
           // Create the LEFT JOIN
-          this.fromSql += " LEFT JOIN " + rightTable.name + " " + rightTable.alias + " ON " + leftTable.alias + ".`" + left[2] + "` = " + rightTable.alias + ".`" + right[2] + "`";
+          for ( let t of tableFromSql ){
+            if ( t.alias == leftTable.alias ){
+              t.joins.push( " LEFT JOIN " + rightTable.name + " " + rightTable.alias + " ON " + leftTable.alias + ".`" + left[2] + "` = " + rightTable.alias + ".`" + right[2] + "`" );
+              break;
+            }
+          }
         }
       }
     }
+
+    // Now we need to create the FROM SQL
+    for ( let t of tableFromSql ){
+      this.fromSql += t.from;
+      if ( t.joins.length > 0 ){
+        this.fromSql += t.joins.join(" ");
+      }
+      this.fromSql += ",";
+    }
+    if (this.fromSql.endsWith(",")) {
+      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
+    }
+
 
     if (this.whereSql.endsWith(" AND ")) {
       this.whereSql = this.whereSql.substring(0, this.whereSql.lastIndexOf(" AND"));
     }
 
-    if (this.fromSql.endsWith(",")) {
-      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
-    }
     return this;
   }
-
 
   selectAll() {
     // Go through the core tables
@@ -158,12 +185,10 @@ class dbOp {
     return this;
   }
 
-
   select(statement) {
     this.selectSql = statement;
     return this;
   }
-
 
   /**
    * statement should be a legal SQL statement, with the alias and ? for the prepared statement;
@@ -183,7 +208,6 @@ class dbOp {
     return this;
   }
 
-
   whereOR(statement, values) {
     if (this.whereSql.length == 0) {
       this.whereSql += "WHERE " + statement;
@@ -197,7 +221,6 @@ class dbOp {
 
     return this;
   }
-
 
   orderby(statement) {
     this.orderbySql = " ORDER BY " + statement;
@@ -280,10 +303,10 @@ class dbOp {
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
-        if (_.has(req.query, table.alias + "." + column) ) {
+        if (_.has(req.query, table.alias + "." + column)) {
           this.where(table.alias + ".`" + column + "` = ?", req.query[table.alias + "." + column]);
           filteredColumns[table.alias + "." + column] = true;
-        } else if ( _.has(req.query, column)) {
+        } else if (_.has(req.query, column)) {
           this.where(table.alias + ".`" + column + "` = ?", req.query[column]);
           filteredColumns[table.alias + "." + column] = true;
         }

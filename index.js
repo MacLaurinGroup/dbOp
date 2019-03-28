@@ -311,6 +311,8 @@ class dbOpMysql {
 
           if (data[fieldData] == "") {
             data[fieldData] = null;
+          } else if ( typeof data[fieldData].getMonth === 'function' ){
+            // this is a date object so we don't need to worry
           } else {
             const parts = data[fieldData].split("-");
             if (parts.length != 3) {
@@ -323,6 +325,8 @@ class dbOpMysql {
 
           if (data[fieldData] == "") {
             data[fieldData] = null;
+          } else if ( typeof data[fieldData].getMonth === 'function' ){
+            // this is a date object so we don't need to worry
           } else {
             const dateTime = data[fieldData].split(" ");
             if (dateTime.length != 2) {

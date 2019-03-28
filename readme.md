@@ -244,6 +244,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-03-28
+  * Fixed bug with the order to which the LEFT JOIN is added into the SQL
 * 2019-03-10
   * Allow null to be set for varchar/text fields
   * convertBlankToNull() helper method added
