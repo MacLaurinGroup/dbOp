@@ -13,15 +13,20 @@ class dbOp {
     this.dbOpMysql = _dbOpMysql;
     this.tables = {};
     this.joinTables = [];
+    this.fromTables = [];
     this.selectSql = "";
     this.whereSql = "";
-    this.fromSql = "FROM ";
     this.orderbySql = "";
     this.limitSql = "";
     this.values = [];
     this.dbConn = null;
     this.console = false;
+    this.jsonColumnMap = null;
+    this.rowFilterRemoveErantPeriod = false;
+    this.rowFilterRemoveNullRow = false;
   }
+
+
 
   /**
    * joinStruct is the { "<table>.<alias>.<column>" : "<table>.<alias>.<column>" } for defining the tables
@@ -35,8 +40,6 @@ class dbOp {
       j[joinStruct] = null;
       joinStruct = j;
     }
-
-    const tableFromSql = [];
 
     for (let t in joinStruct) {
       const left = t.split(".");
@@ -54,7 +57,7 @@ class dbOp {
       if (!_.has(this.tables, leftTable.name)) {
         this.tables[leftTable.name] = leftTable;
 
-        tableFromSql.push({
+        this.fromTables.push({
           alias: leftTable.alias,
           from: "`" + leftTable.name + "` " + leftTable.alias,
           joins: []
@@ -71,7 +74,7 @@ class dbOp {
         if (!_.has(this.tables, rightTable.name)) {
           this.tables[rightTable.name] = rightTable;
 
-          tableFromSql.push({
+          this.fromTables.push({
             alias: rightTable.alias,
             from: "`" + rightTable.name + "` " + rightTable.alias,
             joins: []
@@ -130,9 +133,9 @@ class dbOp {
           this.joinTables.push(rightTable);
 
           // Create the LEFT JOIN
-          for ( let t of tableFromSql ){
-            if ( t.alias == leftTable.alias ){
-              t.joins.push( " LEFT JOIN " + rightTable.name + " " + rightTable.alias + " ON " + leftTable.alias + ".`" + left[2] + "` = " + rightTable.alias + ".`" + right[2] + "`" );
+          for (let t of this.fromTables) {
+            if (t.alias == leftTable.alias) {
+              t.joins.push(" LEFT JOIN " + rightTable.name + " " + rightTable.alias + " ON " + leftTable.alias + ".`" + left[2] + "` = " + rightTable.alias + ".`" + right[2] + "`");
               break;
             }
           }
@@ -140,25 +143,27 @@ class dbOp {
       }
     }
 
-    // Now we need to create the FROM SQL
-    for ( let t of tableFromSql ){
-      this.fromSql += t.from;
-      if ( t.joins.length > 0 ){
-        this.fromSql += t.joins.join(" ");
-      }
-      this.fromSql += ",";
-    }
-    if (this.fromSql.endsWith(",")) {
-      this.fromSql = this.fromSql.substring(0, this.fromSql.length - 1);
-    }
-
-
     if (this.whereSql.endsWith(" AND ")) {
       this.whereSql = this.whereSql.substring(0, this.whereSql.lastIndexOf(" AND"));
     }
 
     return this;
   }
+
+  getFrom(){
+    return this.fromTables;
+  }
+
+  setFrom(_fromTables){
+    this.fromTables = _fromTables;
+  }
+
+  setOptions(config) {
+    this.jsonColumnMap = config.dataTableJsonColumnMap ? config.dataTableJsonColumnMap : null;
+    this.rowFilterRemoveErantPeriod = config.rowFilterRemoveErantPeriod ? config.rowFilterRemoveErantPeriod : false;
+    this.rowFilterRemoveNullRow = config.rowFilterRemoveNullRow ? config.rowFilterRemoveNullRow : false;
+  }
+
 
   selectAll() {
     // Go through the core tables
@@ -259,7 +264,7 @@ class dbOp {
       this.selectAll();
     }
 
-    return "SELECT " + this.selectSql + " " + this.fromSql + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
+    return "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
   }
 
   async run() {
@@ -267,13 +272,16 @@ class dbOp {
       this.selectAll();
     }
 
-    let sql = "SELECT " + this.selectSql + " " + this.fromSql + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
+    const sql = "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
 
     if (this.console) {
       console.log(sql);
     }
 
-    return await this.dbConn.query({ sql: sql, nestTables: "." }, this.values);
+    return this.filterRows(await this.dbConn.query({
+      sql: sql,
+      nestTables: "."
+    }, this.values));
   }
 
   async runFirstRow() {
@@ -282,9 +290,34 @@ class dbOp {
   }
 
   async count() {
-    let sql = "SELECT count(*) as t " + this.fromSql + " " + this.whereSql;
+    const sql = "SELECT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
     const row = await this.dbConn.query(sql, this.values);
     return (row == null || row.length == 0) ? 0 : row[0].t;
+  }
+
+
+  /**
+   * Applies the clean up to the rows before it is sent back
+   */
+  filterRows(rows) {
+    if ((this.rowFilterRemoveErantPeriod == false && this.rowFilterRemoveNullRow == false) || rows.length == 0)
+      return rows;
+
+    for (let row of rows) {
+      for (let col in row) {
+        if (this.rowFilterRemoveNullRow && row[col] == null) {
+          delete row[col];
+          continue;
+        }
+
+        if (this.rowFilterRemoveErantPeriod && col.charAt(0) == '.') {
+          row[col.substring(1)] = row[col];
+          delete row[col];
+        }
+      }
+    }
+
+    return rows;
   }
 
   /**
@@ -296,10 +329,12 @@ class dbOp {
   }
 
   dataTableFilter(req) {
+    if (typeof req.query == "undefined")
+      return;
 
     // AutoFilter; for fields that are part of the string
-    // AutoFilter; for fields that are part of the string
     const filteredColumns = {};
+
     for (let tableName in this.tables) {
       const table = this.tables[tableName];
       for (let column in table.desc.columns) {
@@ -309,6 +344,19 @@ class dbOp {
         } else if (_.has(req.query, column)) {
           this.where(table.alias + ".`" + column + "` = ?", req.query[column]);
           filteredColumns[table.alias + "." + column] = true;
+        }
+      }
+
+      // Check to see if any of the query params are for this query for the custom JSon map
+      if (this.jsonColumnMap == null)
+        continue;
+
+      for (let prefix in this.jsonColumnMap) {
+        for (let queryParam in req.query) {
+          if (queryParam.startsWith(table.alias + "." + prefix)) {
+            this.where(table.alias + ".`" + this.jsonColumnMap[prefix] + "` -> \"$." + queryParam.substring(queryParam.indexOf(prefix) + prefix.length) + "\"=?", req.query[queryParam]);
+            filteredColumns[queryParam] = true;
+          }
         }
       }
     }
@@ -327,7 +375,28 @@ class dbOp {
 
         for (let col of req.query.columns) {
           if (col.searchable == "true" && !_.has(filteredColumns, col.data)) {
-            where += this.transformColumn(col.data);
+            const columnName = transformColumn(col.data);
+
+            if (this.jsonColumnMap != null && columnName.indexOf(".") > 0) {
+              const tableAlias = columnName.substring(0,columnName.indexOf("."));
+              let bFound = false;
+              for (let prefix in this.jsonColumnMap) {
+                if (columnName.startsWith(tableAlias + "." + prefix)) {
+                  where += tableAlias + ".`" + this.jsonColumnMap[prefix] + "` -> ";
+                  where += "\"$." + columnName.substring(columnName.indexOf(prefix) + prefix.length) + "\"";
+                  where += " LIKE ? OR ";
+                  whereVals.push("%" + searchVal + "%");
+                  bFound = true;
+                  break;
+                }
+              }
+
+              // If we added in this column we don't want to put it as part of the core search
+              if ( bFound )
+                continue;
+            }
+
+            where += columnName;
             where += " LIKE ? OR ";
             whereVals.push("%" + searchVal + "%");
           }
@@ -343,14 +412,14 @@ class dbOp {
     // columns
     if (req.query.selectcolumns) {
       this.selectSql = req.query.selectcolumns;
-    } else if (req.query.fields) {
+    } else if (req.query && req.query.fields) {
       this.selectSql = req.query.fields;
     }
 
     // Add in the order
     if (req.query.order && req.query.columns) {
       const colOrderIndex = req.query.order[0].column * 1;
-      const colOrderName = this.transformColumn(req.query.columns[colOrderIndex].data);
+      const colOrderName = transformColumn(req.query.columns[colOrderIndex].data);
       this.orderbySql = " ORDER BY " + colOrderName + " " + ((req.query.order[0].dir == "asc") ? "asc" : "desc");
     }
 
@@ -371,19 +440,38 @@ class dbOp {
     return result;
   }
 
-  transformColumn(colName) {
-    let s = colName.indexOf("\\");
-    if (s >= 0) {
-      colName = colName.substring(0, s) + colName.substring(s + 1);
-    }
 
-    s = colName.indexOf("_");
-    if (s >= 0) {
-      return colName.substring(0, s) + "." + colName.substring(s + 1);
-    }
-
-    return colName;
-  }
 }
 
 module.exports = dbOp;
+
+
+//------------------------------------------------------------
+//- Suporting functions
+
+function generateFromStatement(fromArray) {
+  let fromSql = "FROM ";
+
+  // Now we need to create the FROM SQL
+  for (let t of fromArray) {
+    fromSql += t.from;
+    if (t.joins.length > 0) {
+      fromSql += t.joins.join(" ");
+    }
+    fromSql += ",";
+  }
+  if (fromSql.endsWith(",")) {
+    fromSql = fromSql.substring(0, fromSql.length - 1);
+  }
+
+  return fromSql;
+}
+
+
+function transformColumn(colName) {
+  let s = colName.indexOf("\\");
+  if (s >= 0) {
+    colName = colName.substring(0, s) + colName.substring(s + 1);
+  }
+  return colName;
+}

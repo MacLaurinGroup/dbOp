@@ -237,13 +237,29 @@ The table you are joining to must be on the right hand side.  This will automati
 * .toString()     // gets the final SQL statement as a string
 * .dataTableFilter(req)  // for dataTable support
 * .dataTableExecute()   // executes the query, creating a struct that DataTable wants
+* .setOptions( {} )  // See below
+* .getFrom()     // Gets inner data object for all the tables in the FROM statement
+* .setFrom([])   // Sets the inner data object; allowing to augment the tables
 * async .run()
 * async .runFirstRow()
 * async .count()
 
+```
+.setOptions({
+  dataTableJsonColumnMap : {
+    "__":"jsColumnName"       // for auto JSon search within a JSON type of field; co.__year will search for 'year' in the JSon column
+  },
+  "rowFilterRemoveErantPeriod" : true,   // Remove period in column name in the result that starts with .
+  "rowFilterRemoveNullRow" : true,       // Remove any null values in the columns
+})
+```
 
 ## Updates
 
+* 2019-03-30
+  * Added in setOptions() for cleaning up rows
+  * Added JSon searching in the dataTableFilter()
+  * Added ability to add to the from table list
 * 2019-03-28
   * Fixed bug with the order to which the LEFT JOIN is added into the SQL
 * 2019-03-10
