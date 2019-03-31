@@ -121,6 +121,7 @@ There are a number of helper methods that are available to make data clean up si
 These methods are using the builder pattern:
 
 * .setControlFields([])   // sets all the columns you wish to ignore in any UPDATE/INSERT statements
+* .setDefaultOptions( {} )  // sets the default options for the SQL Config
 * .clearCache()    // clears out the desc cache
 * .sanitizeFieldsAZaz09(data,fieldArray)   // for the array of field names, clean up the data
 * .checkForEmptyFields(data,fieldArray)   // throw an error if any of the fields are empty or null (after trimming whitespace)

@@ -12,6 +12,7 @@ class dbOpMysql {
 
   constructor() {
     this.tableDescCache = {};
+    this.defaultOptions = null;
 
     // These fields will be ignored if passed into the body
     this.controlFields = {
@@ -32,6 +33,10 @@ class dbOpMysql {
   setControlFields(cF){
     this.controlFields = cF;
     return this;
+  }
+
+  setDefaultOptions(config) {
+    this.defaultOptions = config;
   }
 
   /**
@@ -111,6 +116,10 @@ class dbOpMysql {
    */
   async sqlBuilder(dbConn, tables, leftJoinStruct) {
     const dop = new dbOp(this);
+
+    if (this.defaultOptions != null)
+      dop.setOptions(this.defaultOptions);
+
     return await dop.init(dbConn, tables, leftJoinStruct);
   }
 
