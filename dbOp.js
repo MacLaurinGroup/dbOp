@@ -290,7 +290,12 @@ class dbOp {
   }
 
   async count() {
-    const sql = "SELECT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
+    let sql;
+    if ( this.selectSql.toLowerCase().indexOf(" distinct " ) != -1 ){
+      sql = "SELECT DISTINCT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
+    }else {
+      sql = "SELECT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
+    }
     const row = await this.dbConn.query(sql, this.values);
     return (row == null || row.length == 0) ? 0 : row[0].t;
   }

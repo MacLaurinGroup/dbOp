@@ -257,6 +257,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-04-08
+  * Fixed the count() ignoring a 'distinct' in the SELECT
 * 2019-03-30
   * Added in setOptions() for cleaning up rows
   * Added JSon searching in the dataTableFilter()
