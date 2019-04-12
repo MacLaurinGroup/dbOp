@@ -257,6 +257,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-04-12
+  * Fixed null pointer with date
 * 2019-04-08
   * Fixed the count() ignoring a 'distinct' in the SELECT
 * 2019-03-30

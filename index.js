@@ -318,7 +318,7 @@ class dbOpMysql {
           }
         } else if (fieldDef.type == "date" && (data[fieldData] != "now()" && data[fieldData] != "NOW()")) { // yyyy-mm-dd
 
-          if (data[fieldData] == "") {
+          if (data[fieldData] == null || data[fieldData] == "") {
             data[fieldData] = null;
           } else if ( typeof data[fieldData].getMonth === 'function' ){
             // this is a date object so we don't need to worry
@@ -332,7 +332,7 @@ class dbOpMysql {
 
         } else if (fieldDef.type == "datetime" && (data[fieldData] != "now()" && data[fieldData] != "NOW()")) { // yyyy-mm-dd hh:mm:ss
 
-          if (data[fieldData] == "") {
+          if (data[fieldData] == null || data[fieldData] == "") {
             data[fieldData] = null;
           } else if ( typeof data[fieldData].getMonth === 'function' ){
             // this is a date object so we don't need to worry
