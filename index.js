@@ -257,9 +257,6 @@ class dbOpMysql {
 
     sql = sql.substring(0, sql.lastIndexOf("AND"));
 
-    console.log( sql );
-    console.log( vals );
-
     // Execute the function
     this.lastResult = await dbConn.query(sql, vals);
     return _.has(this.lastResult, "changedRows") ? this.lastResult.changedRows : 0;

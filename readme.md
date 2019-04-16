@@ -257,6 +257,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-04-16
+  * Removed console output
 * 2019-04-12
   * Fixed null pointer with date
 * 2019-04-08
