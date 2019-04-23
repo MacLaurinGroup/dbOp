@@ -16,8 +16,6 @@ class classSQLFileRunner {
     this.options = (typeof _options != "undefined") ? _options : {};
     this.delimiter = (typeof this.options.delimiter != "undefined") ? this.options.delimiter : "";
     delete this.options.delimiter;
-
-    console.log( this )
   }
 
   async doFile(filename) {
@@ -38,8 +36,6 @@ class classSQLFileRunner {
         if (classThis.delimiter == "per-line") {
           statements.push(line);
         } else {
-          console.log(line.length)
-
           if (line.trim() == classThis.delimiter || classThis.delimiter.length == 0) {
             if (stmtBlock != "") {
               statements.push(stmtBlock);
