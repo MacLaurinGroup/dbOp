@@ -128,6 +128,7 @@ These methods are using the builder pattern:
 * .checkForMissingFields(data,fieldArray)   // throw an error if any of the fields are missing
 * .checkForMissingEmptyFields(data,fieldArray)   // throw an error if any of the fields are missing or empty
 * .convertBlankToNull(data,fieldArray)  // converts any blank fields to pure null
+* .execSqlFile( dbConn, filename, options )   // runs a file of SQL statements against the dbConn; options { delimiter : "" | "per-line"}
 
 This method returns the last SQL result from an INSERT/UPDATE
 
@@ -257,6 +258,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-04-23
+  * Added ability to process a file of SQL statements
 * 2019-04-16
   * Removed console output
 * 2019-04-12

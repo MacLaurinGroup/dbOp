@@ -7,6 +7,7 @@
 
 const _ = require("underscore");
 const dbOp = require("./dbOp");
+const classSQLFileRunner = require("./classSQLFileRunner");
 
 class dbOpMysql {
 
@@ -23,6 +24,11 @@ class dbOpMysql {
     };
 
     this.lastResult = null;
+  }
+
+  async execSqlFile(dbConn, filename, options){
+    const ob = new classSQLFileRunner(dbConn, options);
+    await ob.doFile(filename);
   }
 
   clearCache() {
