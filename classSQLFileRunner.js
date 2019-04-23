@@ -68,8 +68,7 @@ class classSQLFileRunner {
     if (stmt.trim() == "")
       return;
 
-    if ( Object.keys(this.options).length > 0 )
-      stmt = Mustache.render( stmt, this.options );
+    stmt = Mustache.render( stmt, this.options );
 
     await this.dbConn.query(stmt);
   }
