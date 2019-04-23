@@ -16,6 +16,8 @@ class classSQLFileRunner {
     this.options = (typeof _options != "undefined") ? _options : {};
     this.delimiter = (typeof this.options.delimiter != "undefined") ? this.options.delimiter : "";
     delete this.options.delimiter;
+
+    console.log( this )
   }
 
   async doFile(filename) {
@@ -34,13 +36,16 @@ class classSQLFileRunner {
         let line = chunk.toString("ascii");
 
         if (classThis.delimiter == "per-line") {
-          classThis.__executeStatement(line);
+          statements.push(line);
         } else {
-          if (line.trim() == classThis.delimiter || (classThis.delimiter.length == 0 && line.length == 0)) {
+          console.log(line.length)
+
+          if (line.trim() == classThis.delimiter || classThis.delimiter.length == 0) {
             if (stmtBlock != "") {
               statements.push(stmtBlock);
+              stmtBlock = "";
             }
-            stmtBlock = "";
+            stmtBlock += line + "\r\n";
           } else {
             stmtBlock += line + "\r\n";
           }
@@ -48,6 +53,9 @@ class classSQLFileRunner {
       });
 
       rl.on("close", function() {
+        if ( stmtBlock != "" )
+          statements.push(stmtBlock);
+
         resolve(statements);
       });
 
@@ -57,6 +65,7 @@ class classSQLFileRunner {
     await promise.then((statements) => {
       stArray = statements;
     });
+
 
     // Run around the statements and execute
     for (let stmt of stArray)
