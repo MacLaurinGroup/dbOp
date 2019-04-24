@@ -51,7 +51,7 @@ class dbOpMysql {
   convertBlankToNull( data, fieldArr ){
     for ( let field of fieldArr ){
       field = field.trim();
-      if ( _.has(data, field) && data[field] != null && data[field].trim() == "" ){
+      if ( _.has(data, field) && data[field] != null && data[field].toString().trim() == "" ){
         data[field] = null;
       }
     }
@@ -65,7 +65,7 @@ class dbOpMysql {
   sanitizeFieldsAZaz09(data, fields) {
     for (let field of fields) {
       if (_.has(data, field)) {
-        data[field] = data[field].trim();
+        data[field] = data[field].toString().trim();
         data[field] = data[field].replace(/[^a-zA-Z0-9 ]/g, '-');
       }
     }
@@ -80,7 +80,7 @@ class dbOpMysql {
     for (let field of fields) {
       if (!_.has(data, field)) {
         throw new Error(field + " was missing");
-      } else if (data[field] == null || data[field].trim() == "") {
+      } else if (data[field] == null || data[field].toString().trim() == "") {
         throw new Error(field + " was empty");
       }
     }
@@ -94,7 +94,7 @@ class dbOpMysql {
    */
   checkForEmptyFields(data, fields) {
     for (let field of fields) {
-      if (_.has(data, field) && (data[field] == null || data[field] == "")) {
+      if (_.has(data, field) && (data[field] == null || data[field].toString() == "")) {
         throw new Error(field + " was empty");
       }
     }
