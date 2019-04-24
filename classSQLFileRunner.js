@@ -1,7 +1,7 @@
 /**
  * Class to handle
  *
- * (c) Transforce 2018
+ * (c) MacLaurin Group 2019
  */
 "use strict";
 
@@ -31,17 +31,17 @@ class classSQLFileRunner {
       let stmtBlock = "";
 
       rl.on("line", function(chunk) {
-        let line = chunk.toString("ascii");
+        let line = chunk.toString("ascii").trim();
+        if ( line.length == 0 || line.startsWith("//") )
+          return;
 
         if (classThis.delimiter == "per-line") {
           statements.push(line);
         } else {
-          if (line.trim() == classThis.delimiter || classThis.delimiter.length == 0) {
-            if (stmtBlock != "") {
-              statements.push(stmtBlock);
-              stmtBlock = "";
-            }
+          if (line.endsWith(classThis.delimiter) || classThis.delimiter.length == 0) {
             stmtBlock += line + "\r\n";
+            statements.push(stmtBlock);
+            stmtBlock = "";
           } else {
             stmtBlock += line + "\r\n";
           }
@@ -49,7 +49,7 @@ class classSQLFileRunner {
       });
 
       rl.on("close", function() {
-        if ( stmtBlock != "" )
+        if ( stmtBlock.length > 0 )
           statements.push(stmtBlock);
 
         resolve(statements);
@@ -74,7 +74,7 @@ class classSQLFileRunner {
       return;
 
     if ( Object.keys(this.options).length > 0 )
-    	stmt = Mustache.render( stmt, this.options );
+        stmt = Mustache.render( stmt, this.options );
 
     await this.dbConn.query(stmt);
   }
