@@ -278,7 +278,7 @@ class dbOp {
       this.selectAll();
     }
 
-    return "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.groupbySql + " " + this.limitSql;
+    return "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.groupbySql + " " + this.orderbySql + " " + this.limitSql;
   }
 
   async run() {
@@ -286,7 +286,7 @@ class dbOp {
       this.selectAll();
     }
 
-    const sql = "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.groupbySql + " " + this.limitSql;
+    const sql = "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.groupbySql + " " + this.orderbySql + " " + this.limitSql;
 
     if (this.console) {
       console.log(sql);
