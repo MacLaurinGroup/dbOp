@@ -17,6 +17,7 @@ class dbOp {
     this.selectSql = "";
     this.whereSql = "";
     this.orderbySql = "";
+    this.groupbySql = "";
     this.limitSql = "";
     this.values = [];
     this.dbConn = null;
@@ -150,11 +151,11 @@ class dbOp {
     return this;
   }
 
-  getFrom(){
+  getFrom() {
     return this.fromTables;
   }
 
-  setFrom(_fromTables){
+  setFrom(_fromTables) {
     this.fromTables = _fromTables;
   }
 
@@ -232,6 +233,11 @@ class dbOp {
     return this;
   }
 
+  groupby(statement) {
+    this.groupbySql = " GROUP BY " + statement;
+    return this;
+  }
+
   limit(page, pageSize) {
     this.limitSql = " LIMIT " + ((page) * pageSize) + "," + pageSize;
     return this;
@@ -245,14 +251,22 @@ class dbOp {
   whereReset() {
     this.whereSql = "";
     this.values = [];
+    return this;
   }
 
   orderbyReset() {
     this.orderbySql = "";
+    return this;
+  }
+
+  groupbyReset() {
+    this.groupbySql = "";
+    return this;
   }
 
   limitReset() {
     this.limitSql = "";
+    return this;
   }
 
   toString() {
@@ -264,7 +278,7 @@ class dbOp {
       this.selectAll();
     }
 
-    return "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
+    return "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.groupbySql + " " + this.limitSql;
   }
 
   async run() {
@@ -272,7 +286,7 @@ class dbOp {
       this.selectAll();
     }
 
-    const sql = "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.limitSql;
+    const sql = "SELECT " + this.selectSql + " " + generateFromStatement(this.fromTables) + " " + this.whereSql + " " + this.orderbySql + " " + this.groupbySql + " " + this.limitSql;
 
     if (this.console) {
       console.log(sql);
@@ -291,9 +305,9 @@ class dbOp {
 
   async count() {
     let sql;
-    if ( this.selectSql.toLowerCase().indexOf(" distinct " ) != -1 ){
+    if (this.selectSql.toLowerCase().indexOf(" distinct ") != -1) {
       sql = "SELECT DISTINCT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
-    }else {
+    } else {
       sql = "SELECT count(*) as t " + generateFromStatement(this.fromTables) + " " + this.whereSql;
     }
     const row = await this.dbConn.query(sql, this.values);
@@ -383,7 +397,7 @@ class dbOp {
             const columnName = transformColumn(col.data);
 
             if (this.jsonColumnMap != null && columnName.indexOf(".") > 0) {
-              const tableAlias = columnName.substring(0,columnName.indexOf("."));
+              const tableAlias = columnName.substring(0, columnName.indexOf("."));
               let bFound = false;
               for (let prefix in this.jsonColumnMap) {
                 if (columnName.startsWith(tableAlias + "." + prefix)) {
@@ -397,7 +411,7 @@ class dbOp {
               }
 
               // If we added in this column we don't want to put it as part of the core search
-              if ( bFound )
+              if (bFound)
                 continue;
             }
 

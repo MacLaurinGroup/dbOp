@@ -231,10 +231,12 @@ The table you are joining to must be on the right hand side.  This will automati
 * .where( str[, val])  // adds a where statement with optional prepared value
 * .whereOR( str[, val])  // adds a where statement with optional prepared value, appending as an OR
 * .orderby( str )
+* .groupby( str )
 * .limit( page, pageSize )  // page No and pageSize
 * .setConsole( true|false )  // outputs the final SQL to console.log()
 * .whereReset()   // clears out the where
 * .orderbyReset()  // clears out the orderby
+* .groupbyReset()  // clears out the groupby
 * .limitReset()   // clears out the limit
 * .toString()     // gets the final SQL statement as a string
 * .dataTableFilter(req)  // for dataTable support
@@ -258,6 +260,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2019-05-09
+  * Added groupby()
 * 2019-04-23
   * Added ability to process a file of SQL statements
 * 2019-04-16
