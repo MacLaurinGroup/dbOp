@@ -6,6 +6,7 @@
 "use strict";
 
 const _ = require("underscore");
+const moment = require("moment-timezone");
 
 class dbOp {
 
@@ -25,6 +26,7 @@ class dbOp {
     this.jsonColumnMap = null;
     this.rowFilterRemoveErantPeriod = false;
     this.rowFilterRemoveNullRow = false;
+    this.tz = null;
   }
 
 
@@ -319,11 +321,17 @@ class dbOp {
    * Applies the clean up to the rows before it is sent back
    */
   filterRows(rows) {
-    if ((this.rowFilterRemoveErantPeriod == false && this.rowFilterRemoveNullRow == false) || rows.length == 0)
+    if ((this.rowFilterRemoveErantPeriod == false && this.rowFilterRemoveNullRow == false && this.tz == null) || rows.length == 0)
       return rows;
 
-    for (let row of rows) {
-      for (let col in row) {
+    for (const row of rows) {
+      for (const col in row) {
+
+        // Normalize the dates to the TZ
+        if ( this.tz != null && row[col] != null && typeof row[col].getMonth === "function" ){
+          row[col] = moment(moment(row[col]).tz(this.tz).format("YYYY-MM-DD HH:mm:ss")).toDate();
+        }
+
         if (this.rowFilterRemoveNullRow && row[col] == null) {
           delete row[col];
           continue;
@@ -335,8 +343,15 @@ class dbOp {
         }
       }
     }
-
     return rows;
+  }
+
+  setTimeZoneEST(){
+    this.setTimeZone("America/New_York");
+  }
+
+  setTimeZone(tz){
+    this.tz = tz;
   }
 
   /**

@@ -244,6 +244,8 @@ The table you are joining to must be on the right hand side.  This will automati
 * .setOptions( {} )  // See below
 * .getFrom()     // Gets inner data object for all the tables in the FROM statement
 * .setFrom([])   // Sets the inner data object; allowing to augment the tables
+* .setTimeZoneEST() // Sets the Date columns to be adjusted ("America/New_York")
+* .setTimeZone(tz) // Sets the tz; as per moments.js
 * async .run()
 * async .runFirstRow()
 * async .count()
@@ -260,6 +262,8 @@ The table you are joining to must be on the right hand side.  This will automati
 
 ## Updates
 
+* 2020-04-03
+  * Added timezone adjustment
 * 2019-05-09
   * Added groupby()
 * 2019-04-23
